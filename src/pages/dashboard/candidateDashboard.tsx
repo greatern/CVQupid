@@ -3,6 +3,7 @@ import { Container, Card, PrimaryButton } from "../../components/Layout";
 import { THEME } from "../../theme";
 import { Link, useNavigate } from "react-router-dom";
 import type { JSX } from "react/jsx-runtime";
+import { FaEnvelope, FaCheckCircle } from "react-icons/fa";
 
 type Course = { id: number; title: string; progress: number; img: string };
 type Session = { id: number; mentor: string; datetime: string; completed: boolean; img?: string };
@@ -10,6 +11,7 @@ type Mentor = { id: number; name: string; field: string; company: string; img: s
 
 export default function CandidateDashboard(): JSX.Element {
   const nav = useNavigate();
+  const [showMessages, setShowMessages] = useState(false);
 
   // Candidate info
   const [candidate] = useState({
@@ -43,7 +45,7 @@ export default function CandidateDashboard(): JSX.Element {
     { id: 2, mentor: "Thandi Q", datetime: "2025-12-21 14:00", completed: false, img: "https://picsum.photos/seed/s2/60/60" },
   ]);
 
-  // Mock mentors and the courses they value
+  // Mock mentors
   const [mentors] = useState<Mentor[]>([
     { id: 1, name: "Sipho M", field: "Software Development", company: "TechCo", img: "https://picsum.photos/seed/m1/80/80", rating: 4.5, requiredCourses: [2, 3, 1] },
     { id: 2, name: "Thandi Q", field: "Data Analytics", company: "DataCorp", img: "https://picsum.photos/seed/m2/80/80", rating: 4.7, requiredCourses: [4, 6, 2] },
@@ -74,7 +76,6 @@ export default function CandidateDashboard(): JSX.Element {
     alert(`Mentor request sent to ${mentorName} (simulated)`);
   };
 
-  // Mentor eligibility logic
   const completedCourses = courses.filter((c) => c.progress === 100).map((c) => c.id);
   const eligibleMentors = mentors.filter((m) =>
     m.requiredCourses.every((rc) => completedCourses.includes(rc))
@@ -82,6 +83,12 @@ export default function CandidateDashboard(): JSX.Element {
 
   const coursesCompletedCount = completedCourses.length;
   const mentorEligible = coursesCompletedCount >= 5;
+
+  const messages = mentors.map((m) => ({
+    id: m.id,
+    name: m.name,
+    lastMessage: "Hello! Have you completed the recommended courses?",
+  }));
 
   return (
     <div style={{ minHeight: "100vh", background: `linear-gradient(180deg, ${THEME.primaryLight}, ${THEME.accentBlue}20, #fff)`, padding: 36 }}>
@@ -94,13 +101,34 @@ export default function CandidateDashboard(): JSX.Element {
             </h1>
             <div style={{ color: THEME.muted, marginTop: 6 }}>Your CVQupid dashboard — progress, mentors, and skills.</div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <PrimaryButton onClick={() => nav("/explore")}
-                 style={{ backgroundColor: "#81b9e4ff", color: "white" }}  
-            >Explore Careers</PrimaryButton>
-            <PrimaryButton onClick={downloadCV}
-               style={{ backgroundColor: "#81b9e4ff", color: "white" }}
-            >Download CV</PrimaryButton>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative" }}>
+            <PrimaryButton onClick={() => nav("/explore")} style={{ backgroundColor: "#81b9e4ff", color: "white" }}>Explore Careers</PrimaryButton>
+            <PrimaryButton onClick={downloadCV} style={{ backgroundColor: "#81b9e4ff", color: "white" }}>Download CV</PrimaryButton>
+
+            {/* Messages Dropdown */}
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowMessages((prev) => !prev)} style={{ padding: 8, borderRadius: 8, background: "#fff", border: "1px solid #ccc" }}>
+                <FaEnvelope size={20} />
+              </button>
+              {showMessages && (
+                <div style={{
+                  position: "absolute", right: 0, top: 40,
+                  width: 250, background: "#fff", border: "1px solid #ccc", borderRadius: 8,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10
+                }}>
+                  <h4 style={{ margin: 8, fontSize: 14 }}>Messages</h4>
+                  <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                    {messages.map((msg) => (
+                      <div key={msg.id} onClick={() => nav(`/chat/${msg.id}`)} style={{ padding: 8, borderBottom: "1px solid #eee", cursor: "pointer" }}>
+                        <div style={{ fontWeight: 600 }}>{msg.name}</div>
+                        <div style={{ fontSize: 12, color: THEME.muted }}>{msg.lastMessage}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -133,7 +161,6 @@ export default function CandidateDashboard(): JSX.Element {
                   Technical Skills: {Math.round(skills.reduce((s, x) => s + x.level, 0) / skills.length)}% • Soft Skills: 78% • Mentor Sessions: {sessions.length}
                 </div>
 
-                {/* Mentor Eligibility Tracker */}
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontWeight: 600 }}>Mentor Eligibility Progress</div>
                   <div style={{ height: 12, background: "#eee", borderRadius: 8, marginTop: 6 }}>
@@ -169,7 +196,7 @@ export default function CandidateDashboard(): JSX.Element {
         {/* Main Columns */}
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginTop: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* Skills */}
+            {/* Skills & Courses */}
             <Card>
               <h3 style={{ marginTop: 0 }}>Skills & Gap Analysis</h3>
               <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
@@ -198,7 +225,6 @@ export default function CandidateDashboard(): JSX.Element {
               </div>
             </Card>
 
-            {/* Courses */}
             <Card>
               <h3 style={{ marginTop: 0 }}>Courses</h3>
               <div style={{ display: "grid", gap: 8 }}>
@@ -234,14 +260,62 @@ export default function CandidateDashboard(): JSX.Element {
                           <div style={{ fontSize: 12, color: THEME.muted }}>Rating: {m.rating}⭐</div>
                         </div>
                       </div>
-                      <PrimaryButton onClick={() => requestMentor(m.name)}
-                         style={{ backgroundColor: "#81b9e4ff", color: "white" }}
-                        >Request</PrimaryButton>
+                      <PrimaryButton onClick={() => requestMentor(m.name)} style={{ backgroundColor: "#81b9e4ff", color: "white" }}>Request</PrimaryButton>
                     </div>
                   ))}
                 </div>
               </Card>
             )}
+
+            {/* CV Improvement Tips */}
+{/* CV Improvement Tips */}
+<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 20 }}>
+  <Card style={{ padding: 20, background: "linear-gradient(135deg, #f0f8ff, #e0f2ff)", borderRadius: 12, boxShadow: "0 6px 18px rgba(0,0,0,0.1)" }}>
+    <h3 style={{ marginTop: 0, marginBottom: 12, color: THEME.accentBlue }}>💡 CV Improvement Tips</h3>
+    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      <li style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" style={{ marginTop: 3 }} /> Highlight achievements, not just duties.
+      </li>
+      <li style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" style={{ marginTop: 3 }} /> Use active verbs and quantify results.
+      </li>
+      <li style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" style={{ marginTop: 3 }} /> Keep the format clean and consistent.
+      </li>
+      <li style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" style={{ marginTop: 3 }} /> Tailor your CV to the job description.
+      </li>
+      <li style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" style={{ marginTop: 3 }} /> Include relevant courses and certifications.
+      </li>
+      <li style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" style={{ marginTop: 3 }} /> Proofread for grammar and clarity.
+      </li>
+    </ul>
+  </Card>
+
+  <Card style={{ padding: 20, background: "linear-gradient(135deg, #fff0f5, #ffe6f0)", borderRadius: 12, boxShadow: "0 6px 18px rgba(0,0,0,0.1)" }}>
+    <h3 style={{ marginTop: 0, marginBottom: 12, color: THEME.accentPink }}>✅ CV Checklist</h3>
+    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      <li style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" /> Contact details up-to-date
+      </li>
+      <li style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" /> Professional summary included
+      </li>
+      <li style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" /> Key skills listed
+      </li>
+      <li style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" /> Education & qualifications
+      </li>
+      <li style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <FaCheckCircle color="#4caf50" /> Work experience & achievements
+      </li>
+    </ul>
+  </Card>
+</div>
+
           </div>
 
           {/* Sidebar */}
@@ -263,9 +337,7 @@ export default function CandidateDashboard(): JSX.Element {
                 ))}
               </div>
               <div style={{ marginTop: 12 }}>
-                <PrimaryButton onClick={() => alert("Request new session (simulated)")}
-                       style={{ backgroundColor: "#81b9e4ff", color: "white" }}
-                    >Request Session</PrimaryButton>
+                <PrimaryButton onClick={() => alert("Request new session (simulated)")} style={{ backgroundColor: "#81b9e4ff", color: "white" }}>Request Session</PrimaryButton>
               </div>
             </Card>
 
@@ -274,17 +346,12 @@ export default function CandidateDashboard(): JSX.Element {
               <div style={{ display: "grid", gap: 8 }}>
                 <button onClick={() => nav("/candidate-profile")} style={{ padding: 10, borderRadius: 8 }}>Edit Profile</button>
                 <button onClick={() => nav("/analytics")} style={{ padding: 10, borderRadius: 8 }}>View Analytics</button>
-                <button onClick={() => nav("/course-library")} style={{ padding: 10, borderRadius: 8 }}>Course Library</button>
+                <button onClick={() => nav("/courses")} style={{ backgroundColor: THEME.accentYellow ,padding: 10, borderRadius: 8 }}>Course Library</button>
               </div>
             </Card>
 
             <Card>
-                <PrimaryButton onClick={() => nav("/badge")}
-                    style={{backgroundColor:"#81b9e4ff", color: "white"}}
-                    >
-                    View Badges & Certificates
-                </PrimaryButton>
-
+              <PrimaryButton onClick={() => nav("/badge")} style={{backgroundColor:"#81b9e4ff", color: "white"}}>View Badges & Certificates</PrimaryButton>
             </Card>
           </aside>
         </div>
